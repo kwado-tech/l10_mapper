@@ -14,13 +14,18 @@ Builder l10nMapperBuilder(BuilderOptions options) {
   final locale = options.config['locale'] as bool? ?? true;
   final parseL10n = options.config['parseL10n'] as bool? ?? true;
   final message = options.config['message'] as String?;
+  final classNames = (options.config['classNames'] as String?)
+      ?.split(',')
+      .map((e) => e.trim())
+      .toList() ?? [];
 
   return LibraryBuilder(
     L10nMapperGenerator(
-      l10n: l10n,
-      locale: locale,
-      parseL10n: parseL10n,
-      message: message,
+        l10n: l10n,
+        locale: locale,
+        parseL10n: parseL10n,
+        message: message,
+        classNames: classNames
     ),
     generatedExtension: '.mapper.dart',
   );

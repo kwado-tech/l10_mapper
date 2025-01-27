@@ -17,23 +17,28 @@ class L10nMapperGenerator extends Generator {
   final bool l10n;
   final bool locale;
   final bool parseL10n;
+  List<String> classNames;
 
   //? optional and default: null. should be parsed if translation should not return
   //? nullable values when key is not found but will return specified error message instead
   final String? message;
 
-  L10nMapperGenerator({required this.l10n, required this.locale, required this.parseL10n, required this.message});
+  L10nMapperGenerator({required this.l10n, required this.locale, required this.parseL10n, required this.message, this.classNames = const []});
 
   @override
   FutureOr<String?> generate(LibraryReader library, BuildStep buildStep) {
+    if (classNames.isEmpty) {
+      classNames.add('AppLocalizations');
+    }
+
     final buffer = StringBuffer();
 
     for (var classElement in library.classes.where((c) => c.isAbstract)) {
-      if (classElement.displayName == 'AppLocalizations') {
+      if (classNames.contains(classElement.displayName)) {
         final className = classElement.displayName;
         final localizationPath = classElement.source.uri;
-        final mapperName = '${classElement.displayName}Mapper';
-        final appLocalizationsExtensionName = '${classElement.displayName}Extension';
+        final mapperName = '${className}Mapper';
+        final appLocalizationsExtensionName = '${className}Extension';
         final buildContextExtensionName = 'BuildContextExtension';
 
         final nullable = message == null;
@@ -50,7 +55,7 @@ class L10nMapperGenerator extends Generator {
           final bufferL10nHelper = StringBuffer();
 
           bufferBuildContextExtension.writeln('extension $buildContextExtensionName on BuildContext {');
-          bufferAppLocalizationsExtension.writeln('extension $appLocalizationsExtensionName on ${classElement.displayName} {');
+          bufferAppLocalizationsExtension.writeln('extension $appLocalizationsExtensionName on $className {');
 
           bufferBuildContextExtension.writeln('  $className get _localizations => $className.of(this)!;');
 
@@ -76,7 +81,7 @@ class L10nMapperGenerator extends Generator {
             bufferAppLocalizationsExtension.writeln('}');
 
             bufferL10nHelper.writeln('class L10nHelper {');
-            bufferL10nHelper.writeln('static String parseL10n(AppLocalizations localizations, String translationKey, {List<Object>? arguments}) {');
+            bufferL10nHelper.writeln('static String parseL10n($className localizations, String translationKey, {List<Object>? arguments}) {');
 
             bufferL10nHelper.writeln('const mapper = $mapperName();');
             bufferL10nHelper.writeln('final object = mapper.toLocalizationMap(localizations)[translationKey];');
@@ -118,7 +123,7 @@ class L10nMapperGenerator extends Generator {
         buffer.writeln('const $mapperName();');
 
         // toLocalizationMap
-        buffer.writeln('Map<String, dynamic> toLocalizationMap(AppLocalizations localizations) {');
+        buffer.writeln('Map<String, dynamic> toLocalizationMap($className localizations) {');
 
         buffer.writeln('return {');
         // all getters
